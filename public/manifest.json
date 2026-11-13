@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Risovach",
+  "version": "0.1.0",
+  "description": "Накладывает референс-картинку поверх холста онлайн-редактора и синхронизирует её с зумом и перемещением.",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage", "unlimitedStorage", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Risovach",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": ["*://*.sketchpad.app/*", "*://*.sketch.io/*"],
+      "js": ["main-world.js"],
+      "run_at": "document_idle",
+      "world": "MAIN",
+      "all_frames": true
+    }
+  ],
+  "commands": {
+    "toggle-lock": {
+      "suggested_key": { "default": "Alt+Shift+L" },
+      "description": "Зафиксировать / редактировать фантом"
+    },
+    "toggle-visibility": {
+      "suggested_key": { "default": "Alt+Shift+H" },
+      "description": "Показать / скрыть фантом"
+    }
+  }
+}

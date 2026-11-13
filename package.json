@@ -1,0 +1,22 @@
+{
+  "name": "risovach",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reference-image overlay for online drawing editors",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "npm run build:content && npm run build:mainworld && npm run build:main",
+    "build:content": "vite build --config vite.content.config.ts",
+    "build:mainworld": "vite build --config vite.mainworld.config.ts",
+    "build:main": "vite build --config vite.config.ts",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

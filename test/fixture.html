@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Risovach — тестовый холст</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; font: 13px/1.4 system-ui, sans-serif; background: #15161b; color: #e8e9ed; }
+      header {
+        height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+        background: #1e1f24; border-bottom: 1px solid #2c2f38; position: relative; z-index: 10;
+      }
+      header b { font-size: 14px; }
+      header .hint { color: #8b91a0; margin-left: auto; font-size: 11px; }
+      button {
+        padding: 6px 10px; border: 1px solid #3a3d47; border-radius: 7px;
+        background: #2a2d35; color: inherit; font: inherit; cursor: pointer;
+      }
+      button:hover { background: #343843; }
+      #viewport { position: absolute; inset: 52px 0 0; overflow: hidden; background: #101116; }
+      #world { width: 1200px; height: 800px; transform-origin: 0 0; will-change: transform; }
+      #art { width: 1200px; height: 800px; display: block; background: #ffffff; touch-action: none; }
+      #scale { font-variant-numeric: tabular-nums; color: #9aa0ad; min-width: 54px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>Тестовый редактор</b>
+      <button id="zoomOut">−</button>
+      <span id="scale">100%</span>
+      <button id="zoomIn">+</button>
+      <button id="reset">Сброс</button>
+      <span class="hint">рисовать — ЛКМ по холсту · панорама — Shift + перетаскивание · зум — кнопки</span>
+    </header>
+    <div id="viewport">
+      <div id="world"><canvas id="art" width="1200" height="800"></canvas></div>
+    </div>
+    <script>
+      const world = document.getElementById('world');
+      const art = document.getElementById('art');
+      const scaleEl = document.getElementById('scale');
+      const viewport = document.getElementById('viewport');
+      const state = { scale: 1, x: 20, y: 20 };
+
+      function apply() {
+        world.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        scaleEl.textContent = `${Math.round(state.scale * 100)}%`;
+      }
+
+      function zoomAt(clientX, clientY, factor) {
+        const rect = viewport.getBoundingClientRect();
+        const px = clientX - rect.left;
+        const py = clientY - rect.top;
+        const next = Math.min(8, Math.max(0.25, state.scale * factor));
+        const applied = next / state.scale;
+        state.x = px - (px - state.x) * applied;
+        state.y = py - (py - state.y) * applied;
+        state.scale = next;
+        apply();
+      }
+
+      document.getElementById('zoomIn').onclick = () => {
+        const r = viewport.getBoundingClientRect();
+        zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.25);
+      };
+      document.getElementById('zoomOut').onclick = () => {
+        const r = viewport.getBoundingClientRect();
+        zoomAt(r.left + r.width / 2, r.top + r.height / 2, 0.8);
+      };
+      document.getElementById('reset').onclick = () => {
+        state.scale = 1;
+        state.x = 20;
+        state.y = 20;
+        apply();
+      };
+
+      // Pan with Shift + drag.
+      let pan = null;
+      viewport.addEventListener('pointerdown', (e) => {
+        if (!e.shiftKey) return;
+        pan = { x: e.clientX - state.x, y: e.clientY - state.y };
+        viewport.setPointerCapture(e.pointerId);
+      });
+      viewport.addEventListener('pointermove', (e) => {
+        if (!pan) return;
+        state.x = e.clientX - pan.x;
+        state.y = e.clientY - pan.y;
+        apply();
+      });
+      viewport.addEventListener('pointerup', () => { pan = null; });
+
+      // Painting proves that clicks pass through a locked ghost.
+      const ctx = art.getContext('2d');
+      let painting = false;
+      function point(e) {
+        const r = art.getBoundingClientRect();
+        return {
+          x: ((e.clientX - r.left) / r.width) * art.width,
+          y: ((e.clientY - r.top) / r.height) * art.height,
+        };
+      }
+      art.addEventListener('pointerdown', (e) => {
+        if (e.shiftKey) return;
+        painting = true;
+        art.setPointerCapture(e.pointerId);
+        const p = point(e);
+        ctx.fillStyle = '#e0457b';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      art.addEventListener('pointermove', (e) => {
+        if (!painting) return;
+        const p = point(e);
+        ctx.fillStyle = '#e0457b';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      art.addEventListener('pointerup', () => { painting = false; });
+
+      // Reference content: grid + shapes.
+      function paint() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, art.width, art.height);
+        ctx.strokeStyle = '#e3e6ef';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= art.width; x += 50) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, art.height); ctx.stroke();
+        }
+        for (let y = 0; y <= art.height; y += 50) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(art.width, y); ctx.stroke();
+        }
+        ctx.strokeStyle = '#7c3aed';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(400, 380, 220, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.strokeRect(720, 160, 320, 240);
+        ctx.fillStyle = '#334155';
+        ctx.font = '600 22px system-ui';
+        ctx.fillText('Риcуй поверх и проверь зум', 60, 80);
+      }
+      paint();
+      apply();
+    </script>
+  </body>
+</html>

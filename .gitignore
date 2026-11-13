@@ -1,1 +1,6 @@
 TASK.md
+node_modules/
+dist/
+.tmp-profile-*/
+*.local
+.DS_Store
